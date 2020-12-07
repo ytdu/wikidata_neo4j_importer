@@ -2,14 +2,12 @@ package wip.wikidata_neo4j_importer;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.batchinsert.BatchInserter;
+import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.io.layout.DatabaseLayout;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
@@ -29,8 +27,8 @@ public class EdgeImporter {
     public int nodeCreatedCnt = 0;  // number of nodes created when importing edges
 
     public EdgeImporter(String pathNeo4jDatabase, String propDumpPath, String logPath) throws IOException {
-        labelItem = DynamicLabel.label("Item");
-        labelProp = DynamicLabel.label("Property");
+        labelItem = Label.label("Item");
+        labelProp = Label.label("Property");
         logWriter = new PrintWriter(logPath);
 
         // readPropDic(propDumpPath);   // you can uncomment this line if you want to use the property dump.
@@ -39,7 +37,7 @@ public class EdgeImporter {
     }
 
     public void initializeInserter(String pathNeo4jDatabase) throws IOException {
-        inserter = BatchInserters.inserter(new File(pathNeo4jDatabase));
+        inserter = BatchInserters.inserter(DatabaseLayout.ofFlat(Paths.get(pathNeo4jDatabase)));
     }
 
     public void importEdge(String itemDocStr) {
@@ -59,7 +57,7 @@ public class EdgeImporter {
             // Only import edges between entities
             // Ignore other property values
             if (valueType.equals("wikibase-entityid")) {
-                RelationshipType tempPropType = DynamicRelationshipType.withName(propId);
+                RelationshipType tempPropType = RelationshipType.withName(propId);
 
                 for (int i = 0; i < valueArray.length(); i++) {
                     JSONObject mainSnakObj = valueArray.getJSONObject(i).getJSONObject("mainsnak");
@@ -67,10 +65,18 @@ public class EdgeImporter {
                     if (!mainSnakObj.getJSONObject("datavalue").getString("type").equals("wikibase-entityid"))
                         continue;
 
-                    String nodeType = mainSnakObj.getJSONObject("datavalue").
-                            getJSONObject("value").getString("entity-type");
-                    long objNodeId = mainSnakObj.getJSONObject("datavalue")
-                            .getJSONObject("value").getLong("numeric-id");
+                    String nodeType;
+                    long objNodeId;
+                    try {
+                        nodeType = mainSnakObj.getJSONObject("datavalue").
+                                getJSONObject("value").getString("entity-type");
+                        objNodeId = mainSnakObj.getJSONObject("datavalue")
+                                .getJSONObject("value").getLong("numeric-id");
+                    } catch (Exception e) {
+                        System.err.println("Skip... Hit exception when processing " + subjWikidataId);
+                        e.printStackTrace();
+                        continue;
+                    }
                     String objWikidataId = objNodeId + "";
                     if (nodeType.equals("item")){
                         objNodeId = Util.addPrefixToLong(objNodeId, Config.itemPrefix, 10);

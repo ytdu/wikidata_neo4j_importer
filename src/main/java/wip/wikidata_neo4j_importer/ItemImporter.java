@@ -2,14 +2,14 @@ package wip.wikidata_neo4j_importer;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.batchinsert.BatchInserter;
+import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.graphdb.Label;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.io.layout.DatabaseLayout;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,15 +27,15 @@ public class ItemImporter {
     BatchInserter inserter;
 
     public ItemImporter(String pathNeo4jDatabase, String propDumpPath) throws IOException {
-        labelItem = DynamicLabel.label("Item");
-        labelProp = DynamicLabel.label("Property");
+        labelItem = Label.label("Item");
+        labelProp = Label.label("Property");
         propertyWriter = new PrintWriter(propDumpPath);
 
         initializeInserter(pathNeo4jDatabase);
     }
 
     public void initializeInserter(String pathNeo4jDatabase) throws IOException {
-        inserter = BatchInserters.inserter(new File(pathNeo4jDatabase));
+        inserter = BatchInserters.inserter(DatabaseLayout.ofFlat(Paths.get(pathNeo4jDatabase)));
         // inserter.createDeferredSchemaIndex(labelItem).on("wikidataId").create();
     }
 
