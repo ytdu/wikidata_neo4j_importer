@@ -117,7 +117,7 @@ public class ItemImporter {
             String tempAlias = ((JSONObject) aliasObj).getString("value");
             aliasStr += tempAlias + "\n";
         }
-        return aliasStr.substring(0, aliases.length()-1);
+        return aliasStr.substring(0, aliasStr.length()-1);
     }
 
 }
