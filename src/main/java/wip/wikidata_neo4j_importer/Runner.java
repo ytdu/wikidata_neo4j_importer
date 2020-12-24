@@ -11,13 +11,18 @@ public class Runner {
             System.out.println("Usage: java Runner wikidata_dump_path neo4j_db_dir [node/edge]\n" +
                     "param 1: path of wikidata dump\n" +
                     "param 2: path of neo4j database directory\n" +
-                    "param 3: enter 'node' or 'edge', indicating whether import node or edge");
+                    "param 3: enter 'node' or 'edge', indicating whether import node or edge\n" +
+                    "param 4: <optional> property dump file (for item non-item property importing)");
             System.exit(1);
         }
 
         String dataPath = args[0];
         String pathNeo4jDatabase = args[1];
         String mode = args[2];      // whether we are inserting nodes or edges
+        String propId2NamePath = null;
+        if (args.length > 3) {
+            propId2NamePath = args[3];
+        }
         String propertyDumPath = "./propertyDump.txt";      // dump all property information in this file
         String edgeLogPath = "./edgeLog.txt";   // log uncreated nodes when adding edges
 
@@ -29,7 +34,7 @@ public class Runner {
         // If you need one, you can manually create them with cypher commands like:
         // "create index on :Item(wikidataId)"
         if (mode.equals("node")) {
-            ItemImporter itemImporter = new ItemImporter(pathNeo4jDatabase, propertyDumPath);
+            ItemImporter itemImporter = new ItemImporter(pathNeo4jDatabase, propertyDumPath, propId2NamePath);
             try{
                 // Reader of compressed wikidata dump
                 BufferedReader inputReader = Util.getBufferedReaderForCompressedFile(dataPath);
